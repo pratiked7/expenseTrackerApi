@@ -2,6 +2,7 @@ package com.jadhoc.expensetracker.repositories;
 
 import com.jadhoc.expensetracker.domain.User;
 import com.jadhoc.expensetracker.exceptions.EtAuthException;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -32,6 +33,8 @@ public class UserRepositoryImpl implements UserRepository{
     @Override
     public Integer create(String firstName, String lastName, String email, String password) throws EtAuthException {
 
+        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(10));
+
         try {
 
             KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -41,7 +44,7 @@ public class UserRepositoryImpl implements UserRepository{
                 ps.setString(1, firstName);
                 ps.setString(2, lastName);
                 ps.setString(3, email);
-                ps.setString(4, password);
+                ps.setString(4, hashedPassword);
 
                 return ps;
 
@@ -59,7 +62,9 @@ public class UserRepositoryImpl implements UserRepository{
         try {
 
             User user = jdbcTemplate.queryForObject(SQL_FIND_BY_EMAIL, userRowMapper, email);
-            if(user != null && !password.equals(user.getPassword())){
+
+
+            if(user != null && !BCrypt.checkpw(password, user.getPassword())){
                 throw new EtAuthException("Invalid email or password");
             }
 
