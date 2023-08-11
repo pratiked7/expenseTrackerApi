@@ -1,13 +1,13 @@
 --delete database (for testing purpose)
-drop database expensetrackerdb;
+drop database if exists expensetrackerdb;
 --delete user (for testing purpose)
-drop user expensetracker;
+drop user if exists expensetracker;
 --create an user
-create user expensetracker with password 'password';
+create user expensetracker with password 'password' createdb;
 --create database using pre-defined template and define owner
 create database expensetrackerdb with template=template0 owner=expensetracker;
 --connect with db
-connect expensetrackerdb;
+\connect expensetrackerdb;
 --to create any db object, user needs privileges
 alter default privileges grant all on tables to expensetracker;
 --sequences to generate primary keys
@@ -56,8 +56,6 @@ alter table et_transactions add constraint trans_users_fk
 foreign key (user_id) references et_users(user_id);
 
 --create sequences for all 3 tables primary key
-
 create sequence et_users_seq increment 1 start 1;
 create sequence et_categories_seq increment 1 start 1;
 create sequence et_transactions_seq increment 1 start 1000;
-
