@@ -1,5 +1,8 @@
 package com.jadhoc.expensetracker.resources;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.jadhoc.expensetracker.Constants;
 import com.jadhoc.expensetracker.domain.User;
 import com.jadhoc.expensetracker.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,10 +31,7 @@ public class UserResource {
         String email = (String) userMap.get("email");
         String password = (String) userMap.get("password");
         User user = userService.validateUser(email, password);
-        Map<String, String> map = new HashMap<>();
-        map.put("message", "Login successful : " + user.getUserId());
-
-        return new ResponseEntity<>(map, HttpStatus.OK);
+        return new ResponseEntity<>(generateJWTToken(user), HttpStatus.OK);
     }
 
     @PostMapping("/register")
@@ -39,12 +40,26 @@ public class UserResource {
         String lastName = (String) userMap.get("lastName");
         String email = (String) userMap.get("email");
         String password = (String) userMap.get("password");
-
         User user = userService.registerUser(firstName, lastName, email, password);
-        Map<String, String> map = new HashMap<>();
-        map.put("Message", "registered successfully : " + user.getUserId());
+        return new ResponseEntity<>(generateJWTToken(user), HttpStatus.OK);
+    }
 
-        return new ResponseEntity<>(map, HttpStatus.OK);
+    private Map<String, String> generateJWTToken(User user){
+        long timestamp = System.currentTimeMillis();
+        Algorithm algorithm = Algorithm.HMAC256(Constants.API_SECRET_KEY);
+        String token = JWT.create()
+                .withIssuer("auth0")
+                .withIssuedAt(new Date(timestamp))
+                .withExpiresAt(new Date(timestamp + Constants.TOKEN_VALIDITY))
+                .withClaim("userId", user.getUserId())
+                .withClaim("email", user.getEmail())
+                .withClaim("firstName", user.getFirstName())
+                .withClaim("lastName", user.getLastName())
+                .sign(algorithm);
+
+        Map<String, String> map = new HashMap<>();
+        map.put("token", token);
+        return map;
     }
 
 }
